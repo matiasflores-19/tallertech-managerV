@@ -7,27 +7,39 @@
     {
       "source": "/sw.js",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
-        { "key": "Service-Worker-Allowed", "value": "/" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
       ]
     },
     {
       "source": "/manifest.webmanifest",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
       ]
     },
     {
       "source": "/api/:path*",
       "headers": [
-        { "key": "x-vercel-enable-rewrite-caching", "value": "0" }
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
       ]
     }
   ],
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://TU-API.onrender.com/api/:path*"
+      "destination": "https://tallertech-api-w0xd.onrender.com/api/:path*"
     },
     {
       "source": "/:path*",
