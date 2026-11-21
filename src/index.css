@@ -203,6 +203,16 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  .modal-panel {
+    max-height: 94vh;
+    max-height: 94dvh;
+  }
+
+  .modal-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
   .top-safe {
     padding-top: env(safe-area-inset-top, 0px);
   }

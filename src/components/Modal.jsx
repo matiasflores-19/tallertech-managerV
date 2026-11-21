@@ -48,7 +48,7 @@ export default function Modal({
     >
       <div
         className={classNames(
-          'flex max-h-[94dvh] w-full animate-slide-up flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-ink-850 shadow-2xl sm:max-h-[90vh] sm:rounded-2xl',
+          'modal-panel flex w-full animate-slide-up flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-ink-850 shadow-2xl sm:rounded-2xl',
           SIZES[size],
           className,
         )}
@@ -62,8 +62,8 @@ export default function Modal({
             <X size={18} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="border-t border-white/[0.07] bg-ink-900/50 px-5 py-3.5">{footer}</div>}
+        <div className="modal-scroll flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        {footer && <div className="bottom-safe border-t border-white/[0.07] bg-ink-900/50 px-5 py-3.5">{footer}</div>}
       </div>
     </div>
   );
