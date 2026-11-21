@@ -55,7 +55,7 @@ Supabase Free incluye 1 GB de Storage y 500 MB de base. Al guardar las fotos en 
    - Plan: **Free**
    - **Build Command:**
      ```bash
-     npm ci --omit=dev && mkdir -p bin && curl -fSL https://github.com/benbjohnson/litestream/releases/download/v0.5.18/litestream-0.5.18-linux-amd64.tar.gz -o /tmp/litestream.tar.gz && tar -xzf /tmp/litestream.tar.gz -C bin && chmod +x bin/litestream
+     npm ci --omit=dev && mkdir -p bin && curl -fSL https://github.com/benbjohnson/litestream/releases/download/v0.5.18/litestream-0.5.18-linux-x86_64.tar.gz -o /tmp/litestream.tar.gz && tar -xzf /tmp/litestream.tar.gz -C bin && chmod +x bin/litestream
      ```
    - **Start Command:**
      ```bash

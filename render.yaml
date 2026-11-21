@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: npm ci --omit=dev && mkdir -p bin && curl -fSL https://github.com/benbjohnson/litestream/releases/download/v0.5.18/litestream-0.5.18-linux-amd64.tar.gz -o /tmp/litestream.tar.gz && tar -xzf /tmp/litestream.tar.gz -C bin && chmod +x bin/litestream
+    buildCommand: npm ci --omit=dev && mkdir -p bin && curl -fSL https://github.com/benbjohnson/litestream/releases/download/v0.5.18/litestream-0.5.18-linux-x86_64.tar.gz -o /tmp/litestream.tar.gz && tar -xzf /tmp/litestream.tar.gz -C bin && chmod +x bin/litestream
     startCommand: bash scripts/start-render.sh
     healthCheckPath: /api/health
     envVars:
