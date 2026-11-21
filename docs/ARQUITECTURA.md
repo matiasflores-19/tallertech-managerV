@@ -13,9 +13,15 @@ Express 5 (Node.js)
   ▼
 SQLite (node:sqlite, WAL)
   ├─ data/tallertech.db
-  ├─ data/uploads/<orden>/*.jpg
-  └─ data/backups/*.db
+  ├─ fotos BLOB dentro de la base
+  └─ data/backups/*.db (solo en servidor con disco persistente)
 ```
+
+### Variante de costo cero
+Para producción gratis, Litestream replica la base SQLite (con las fotos incluidas)
+a un bucket privado de Supabase Storage. Render Free no necesita disco persistente:
+al arrancar, Litestream restaura la base desde Supabase. Ver
+[`DESPLIEGUE_CERO.md`](DESPLIEGUE_CERO.md).
 
 - **Frontend**: aplicación SPA con React Router. En desarrollo se sirve con Vite y proxy `/api`; en producción Express sirve `dist/` y la API desde el mismo origen.
 - **Backend**: API REST en Express, validación con Zod, reglas de negocio transaccionales y auditoría.
@@ -61,7 +67,7 @@ erDiagram
 | `order_status_history` | Trazabilidad de cada cambio de estado. |
 | `order_interventions` | Diagnóstico, reparación, prueba o nota. |
 | `order_parts` | Repuestos usados, costos/precios y baja lógica por reversión. |
-| `order_photos` | Metadatos de fotos en disco. |
+| `order_photos` | Fotografías guardadas como BLOB y sus metadatos. |
 | `payments` | Señas, pagos parciales y finales; baja lógica. |
 | `products` | Inventario, stock, mínimos, precios, proveedor y ubicación. |
 | `inventory_movements` | Entradas, salidas y ajustes con stock resultante. |
@@ -106,7 +112,7 @@ La API acepta cualquier transición explícita (el taller puede corregir estados
 3. Generar número de orden por año.
 4. Insertar orden + historial inicial + diagnóstico inicial (si existe).
 5. Si hay seña, insertar pago y transacción de ingreso.
-6. Guardar fotos en disco y registrar metadatos.
+6. Guardar fotos como BLOB en `order_photos` y registrar metadatos.
 7. Auditar y devolver la orden completa.
 
 ### Agregar repuesto
@@ -123,9 +129,10 @@ La API acepta cualquier transición explícita (el taller puede corregir estados
 4. Auditar; devolver orden con nuevo saldo.
 
 ### Respaldos
-- **Automático**: `PRAGMA wal_checkpoint(FULL)` + `VACUUM INTO` a `data/backups/`, retención de 12.
+- **Automático**: `PRAGMA wal_checkpoint(FULL)` + `VACUUM INTO` a `data/backups/`, retención de 12 (solo con disco persistente).
 - **JSON completo**: exporta tablas y fotos en base64, descargable por admin.
-- **Restauración**: valida formato y admin, deshabilita FKs, borra e inserta en orden de dependencias, reactiva FKs y restaura fotos.
+- **Restauración**: valida formato y admin, deshabilita FKs, borra e inserta en orden de dependencias, reactiva FKs y restaura las fotos desde base64.
+- **Costo cero**: Litestream replica la base completa a Supabase Storage y la restaura al arrancar Render Free.
 
 ## 5. Seguridad y permisos
 
@@ -164,5 +171,6 @@ La API acepta cualquier transición explícita (el taller puede corregir estados
 
 - **Local**: `npm run build && npm start`.
 - **Desarrollo**: `npm run dev`.
-- **Producción recomendada**: Node bajo systemd/PM2 + Nginx/Caddy con HTTPS, datos en volumen persistente y copias externas.
-- SQLite admite un único proceso escritor. Para múltiples sucursales o alta concurrencia, migrar a PostgreSQL y almacenamiento de objetos para fotos.
+- **Producción recomendada de costo cero**: Vercel Hobby + Render Free + Supabase Storage (Litestream). Ver [`DESPLIEGUE_CERO.md`](DESPLIEGUE_CERO.md).
+- **Producción tradicional**: Node bajo systemd/PM2 + Nginx/Caddy con HTTPS, datos en volumen persistente y copias externas.
+- SQLite admite un único proceso escritor. Para múltiples sucursales o alta concurrencia, migrar a PostgreSQL.

@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: tallertech-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci --omit=dev && mkdir -p bin && curl -fSL https://github.com/benbjohnson/litestream/releases/download/v0.5.18/litestream-0.5.18-linux-amd64.tar.gz -o /tmp/litestream.tar.gz && tar -xzf /tmp/litestream.tar.gz -C bin && chmod +x bin/litestream
+    startCommand: bash scripts/start-render.sh
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /tmp/tallertech
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: SEED_DEMO
+        value: "true"
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: LITESTREAM_REPLICA_URL
+        sync: false
+      - key: LITESTREAM_ACCESS_KEY_ID
+        sync: false
+      - key: LITESTREAM_SECRET_ACCESS_KEY
+        sync: false

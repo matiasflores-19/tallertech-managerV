@@ -201,8 +201,8 @@ ADMIN_PASSWORD=Admin1234!
 
 ### Variables de datos
 - Base: `data/tallertech.db`
-- Fotos: `data/uploads/<orderId>/`
-- Respaldos automáticos: `data/backups/`
+- Fotografías: dentro de la misma base SQLite como BLOB (se respaldan y replican junto con la base).
+- Respaldos automáticos locales: `data/backups/`
 - Secretos locales: `data/.secrets.json`
 
 ---
@@ -237,8 +237,15 @@ tallertech-manager/
 ├─ docs/
 │  ├─ ARQUITECTURA.md
 │  ├─ MANUAL_USUARIO.md
+│  ├─ DESPLIEGUE_CERO.md
 │  ├─ DESPLIEGUE_CLOUDFLARE_SUPABASE.md
 │  └─ DESPLIEGUE_VERCEL.md
+├─ scripts/
+│  ├─ reset-demo.mjs
+│  ├─ set-vercel-api.mjs
+│  └─ start-render.sh       # Litestream + API en Render Free
+├─ litestream.yml           # Réplica SQLite → Supabase Storage
+├─ render.yaml              # Blueprint de Render Free
 ├─ functions/api/[[path]].js # Proxy para Cloudflare Pages
 ├─ vercel.json               # Frontend Vercel + proxy externo /api
 ├─ tests/
@@ -253,6 +260,7 @@ tallertech-manager/
 
 - [Arquitectura y modelo de datos](docs/ARQUITECTURA.md)
 - [Manual de usuario](docs/MANUAL_USUARIO.md)
+- [Despliegue gratis: Vercel Hobby + Render Free + Supabase Storage](docs/DESPLIEGUE_CERO.md)
 - [Despliegue en Cloudflare Pages + Supabase](docs/DESPLIEGUE_CLOUDFLARE_SUPABASE.md)
 - [Despliegue en Vercel](docs/DESPLIEGUE_VERCEL.md)
 - [Capturas de la aplicación](docs/screenshots/dashboard.png)
@@ -361,7 +369,7 @@ Para producción:
 3. Definir `JWT_SECRET` y `ENCRYPTION_KEY` propios.
 4. Cambiar la contraseña inicial y desactivar usuarios innecesarios.
 5. Restringir permisos del sistema de archivos sobre `data/`.
-6. Programar copias externas de `data/backups/` y del directorio `data/uploads/`.
+6. Programar copias externas de `data/backups/`. En la variante gratis, Litestream replica la base completa a Supabase Storage.
 
 ---
 
@@ -419,11 +427,11 @@ ENCRYPTION_KEY=<hex de 64 caracteres>
 
 ## 12. Limitaciones actuales y próximos pasos
 
-- SQLite está pensado para una única instancia. Para acceso concurrente de muchas sucursales, migrar a PostgreSQL y almacenamiento de objetos para fotos.
+- SQLite está pensado para una única instancia. Para acceso concurrente de muchas sucursales, migrar a PostgreSQL.
 - El envío de comprobantes por WhatsApp/email no está integrado; el PDF se descarga e imprime o comparte manualmente.
 - No hay integración con AFIP/facturación fiscal.
 - El control de caja es operativo, no contable/fiscal.
-- Las fotos se guardan localmente; para producción distribuida usar S3/MinIO.
+- Las fotos se guardan como BLOB dentro de SQLite; en la variante de costo cero viajan en la réplica de Litestream a Supabase Storage. Para volumen muy alto conviene migrar a un storage de objetos.
 - No se implementó recuperación de contraseña por correo; un administrador puede asignar una nueva.
 
 ---

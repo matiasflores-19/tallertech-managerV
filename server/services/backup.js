@@ -3,7 +3,6 @@ import path from 'node:path';
 import { db, all, insert, run, get, getSettings } from '../db.js';
 import { config, DATA_DIR } from '../config.js';
 import { nowIso } from '../utils.js';
-import { photoPath } from './uploads.js';
 
 const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 fs.mkdirSync(BACKUP_DIR, { recursive: true });
@@ -29,7 +28,7 @@ const TABLES = {
   order_status_history: ['id', 'order_id', 'from_status', 'to_status', 'note', 'changed_by', 'created_at'],
   order_interventions: ['id', 'order_id', 'type', 'description', 'technician_id', 'created_by', 'created_at'],
   order_parts: ['id', 'order_id', 'product_id', 'quantity', 'unit_cost', 'unit_price', 'notes', 'created_by', 'created_at', 'removed_at'],
-  order_photos: ['id', 'order_id', 'file_name', 'mime_type', 'label', 'created_at'],
+  order_photos: ['id', 'order_id', 'file_name', 'mime_type', 'data', 'label', 'created_at'],
   payments: ['id', 'order_id', 'client_id', 'amount', 'method', 'payment_type', 'reference', 'notes', 'received_at', 'created_by', 'created_at', 'deleted_at'],
   inventory_movements: ['id', 'product_id', 'movement_type', 'quantity', 'stock_after', 'unit_cost', 'reason', 'reference_type', 'reference_id', 'notes', 'created_by', 'created_at'],
   transactions: ['id', 'type', 'category', 'description', 'amount', 'method', 'transaction_date', 'order_id', 'payment_id', 'supplier_id', 'notes', 'created_by', 'created_at', 'deleted_at'],
@@ -112,16 +111,14 @@ export function buildJsonBackup({ includeImages = true } = {}) {
 
   for (const [table, columns] of Object.entries(TABLES)) {
     const rows = all(`SELECT ${columns.join(', ')} FROM ${table}`);
-    if (table === 'order_photos' && includeImages) {
+    if (table === 'order_photos') {
       backup.tables[table] = rows.map((row) => {
-        let data = null;
-        try {
-          const file = photoPath(row.order_id, row.file_name);
-          if (fs.existsSync(file)) data = fs.readFileSync(file).toString('base64');
-        } catch {
-          data = null;
-        }
-        return { ...row, data_base64: data };
+        const { data, ...metadata } = row;
+        if (!includeImages) return metadata;
+        return {
+          ...metadata,
+          data_base64: data ? Buffer.from(data).toString('base64') : null,
+        };
       });
     } else {
       backup.tables[table] = rows;
@@ -146,12 +143,7 @@ export function validateBackup(data) {
 
 export function restoreJsonBackup(data) {
   validateBackup(data);
-  const photoRecords = data.tables.order_photos || [];
-  const imageData = new Map(
-    photoRecords
-      .filter((photo) => photo.data_base64)
-      .map((photo) => [`${photo.order_id}/${photo.file_name}`, photo.data_base64]),
-  );
+  let imagesRestored = 0;
 
   db.exec('PRAGMA foreign_keys = OFF');
   db.exec('BEGIN IMMEDIATE');
@@ -166,7 +158,15 @@ export function restoreJsonBackup(data) {
       const sql = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`;
       const statement = db.prepare(sql);
       for (const row of rows) {
-        statement.run(...columns.map((column) => (row[column] === undefined ? null : row[column])));
+        const values = columns.map((column) => {
+          if (table === 'order_photos' && column === 'data') {
+            if (!row.data_base64) return null;
+            imagesRestored += 1;
+            return Buffer.from(row.data_base64, 'base64');
+          }
+          return row[column] === undefined ? null : row[column];
+        });
+        statement.run(...values);
       }
     }
     db.exec('COMMIT');
@@ -181,20 +181,9 @@ export function restoreJsonBackup(data) {
   }
   db.exec('PRAGMA foreign_keys = ON');
 
-  for (const [key, base64] of imageData) {
-    try {
-      const [orderId, fileName] = key.split('/');
-      const directory = path.dirname(photoPath(orderId, fileName));
-      fs.mkdirSync(directory, { recursive: true });
-      fs.writeFileSync(photoPath(orderId, fileName), Buffer.from(base64, 'base64'));
-    } catch (error) {
-      console.warn('No se pudo restaurar una fotografía:', error.message);
-    }
-  }
-
   return {
     restoredAt: nowIso(),
     tables: Object.fromEntries(Object.entries(data.tables).map(([table, rows]) => [table, rows.length])),
-    imagesRestored: imageData.size,
+    imagesRestored,
   };
 }

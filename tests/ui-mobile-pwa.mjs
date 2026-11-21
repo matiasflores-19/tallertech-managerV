@@ -69,6 +69,10 @@ await page.getByPlaceholder('Ej. Samsung').fill('Lenovo');
 await page.getByPlaceholder('Ej. Galaxy A54').fill('ThinkPad E14');
 await page.getByPlaceholder('Ej. No enciende después de una descarga').fill('No enciende después de un corte de luz.');
 const cameraCount = await page.locator('input[type="file"][capture="environment"]').count();
+if (cameraCount) {
+  await page.locator('input[type="file"][capture="environment"]').setInputFiles(path.resolve('public/icons/favicon-32.png'));
+  await page.waitForTimeout(700);
+}
 await page.screenshot({ path: path.join(artifacts, '43-recepcion-paso2.png'), fullPage: true });
 await page.getByRole('button', { name: /Continuar/ }).click();
 await page.waitForTimeout(300);

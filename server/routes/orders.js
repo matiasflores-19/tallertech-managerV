@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import fs from 'node:fs';
 import { z } from 'zod';
 import { requireAuth, requireRole } from '../auth.js';
 import { all, get, insert, run, transaction } from '../db.js';
@@ -26,7 +25,7 @@ import {
   STATUS_META,
 } from '../utils.js';
 import { decryptSecret, encryptSecret } from '../security.js';
-import { saveOrderPhotos, photoPath, deleteOrderPhotos } from '../services/uploads.js';
+import { saveOrderPhotos } from '../services/uploads.js';
 import { renderOrderReceipt } from '../services/pdf.js';
 
 const router = Router();
@@ -421,10 +420,11 @@ router.post(
 
     const photos = saveOrderPhotos(created.orderId, data.photos || []);
     for (const photo of photos) {
-      insert('INSERT INTO order_photos (order_id, file_name, mime_type, label) VALUES (?, ?, ?, ?)', [
+      insert('INSERT INTO order_photos (order_id, file_name, mime_type, data, label) VALUES (?, ?, ?, ?, ?)', [
         created.orderId,
         photo.fileName,
         photo.mime,
+        photo.buffer,
         photo.label,
       ]);
     }
@@ -797,10 +797,11 @@ router.post(
     const data = parse(schema, req.body);
     const saved = saveOrderPhotos(id, data.photos);
     for (const photo of saved) {
-      insert('INSERT INTO order_photos (order_id, file_name, mime_type, label) VALUES (?, ?, ?, ?)', [
+      insert('INSERT INTO order_photos (order_id, file_name, mime_type, data, label) VALUES (?, ?, ?, ?, ?)', [
         id,
         photo.fileName,
         photo.mime,
+        photo.buffer,
         photo.label,
       ]);
     }
@@ -818,11 +819,10 @@ router.get(
       id,
     ]);
     if (!photo) throw new HttpError(404, 'Fotografía no encontrada.');
-    const file = photoPath(id, photo.file_name);
-    if (!fs.existsSync(file)) throw new HttpError(404, 'El archivo de la fotografía no está disponible.');
+    if (!photo.data) throw new HttpError(404, 'La fotografía no tiene datos asociados.');
     res.setHeader('Content-Type', photo.mime_type);
     res.setHeader('Cache-Control', 'private, max-age=3600');
-    res.sendFile(file);
+    res.send(Buffer.from(photo.data));
   }),
 );
 
@@ -848,7 +848,6 @@ router.delete(
     if (payments > 0) {
       throw new HttpError(409, 'No se puede eliminar una orden con pagos registrados. Cambiá su estado a cancelada.');
     }
-    deleteOrderPhotos(id);
     run('DELETE FROM orders WHERE id = ?', [id]);
     audit(req, 'ORDER_DELETE', 'order', id, `Se eliminó la orden ${order.order_number}.`);
     res.json({ ok: true, message: 'Orden eliminada.' });

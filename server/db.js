@@ -12,6 +12,13 @@ const schema = fs.readFileSync(path.join(here, 'schema.sql'), 'utf8');
 export const db = new DatabaseSync(config.dbPath);
 db.exec(schema);
 
+// Migración incremental: las fotos ahora se guardan dentro de la base para que
+// Litestream/Supabase Storage las replique junto con el resto de los datos.
+const photoColumns = db.prepare('PRAGMA table_info(order_photos)').all().map((column) => column.name);
+if (!photoColumns.includes('data')) {
+  db.exec('ALTER TABLE order_photos ADD COLUMN data BLOB');
+}
+
 export function all(sql, params = []) {
   return db.prepare(sql).all(...normalizeParams(params));
 }

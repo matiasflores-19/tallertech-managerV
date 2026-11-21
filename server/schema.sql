@@ -179,6 +179,7 @@ CREATE TABLE IF NOT EXISTS order_photos (
   order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   file_name TEXT NOT NULL,
   mime_type TEXT NOT NULL,
+  data BLOB,
   label TEXT,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );

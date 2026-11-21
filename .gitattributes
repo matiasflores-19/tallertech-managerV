@@ -1,0 +1,2 @@
+# Forzar LF en scripts de shell usados por Render/Linux.
+*.sh text eol=lf

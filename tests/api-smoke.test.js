@@ -114,7 +114,10 @@ test('crea cliente, orden, repuesto, pago y cambia estado', async () => {
       payment_method: 'EFECTIVO',
       unlock_type: 'Contraseña',
       unlock_secret: 'secreto-123',
-      photos: [],
+      photos: [{
+        data_url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        label: 'Foto de prueba',
+      }],
     },
   });
   assert.equal(orderResponse.status, 201);
@@ -127,6 +130,13 @@ test('crea cliente, orden, repuesto, pago y cambia estado', async () => {
   assert.equal(Number(detail.order.paid_total), 30000);
   assert.equal(Number(detail.order.balance), 70000);
   assert.equal(detail.statusHistory.length, 1);
+  assert.equal(detail.photos.length, 1);
+
+  const photoResponse = await request(`/orders/${orderId}/photos/${detail.photos[0].id}`, { raw: true });
+  assert.equal(photoResponse.status, 200);
+  assert.match(photoResponse.headers.get('content-type'), /image\/png/);
+  const photoBytes = Buffer.from(await photoResponse.arrayBuffer());
+  assert.ok(photoBytes.length > 20);
 
   const { data: inventory } = await request('/inventory/products');
   const product = inventory.products.find((item) => item.stock > 0);
@@ -205,12 +215,13 @@ test('finanzas, inventario y respaldo JSON funcionan', async () => {
   const backupJson = await backupResponse.json();
   assert.equal(backupJson.app, 'TallerTech Manager');
   assert.ok(backupJson.tables.orders.length >= 30);
+  assert.ok(backupJson.tables.order_photos.some((photo) => photo.data_base64));
 
   const report = (await request('/reports/data?kind=ganancias')).data.report;
   assert.equal(report.kind, 'ganancias');
   assert.ok(Array.isArray(report.columns));
 
-  const restoreSource = await (await request('/settings/backup?images=false', { raw: true })).json();
+  const restoreSource = await (await request('/settings/backup?images=true', { raw: true })).json();
   const stamp = Date.now();
   const { data: tempClient } = await request('/clients', {
     method: 'POST',
@@ -232,4 +243,13 @@ test('finanzas, inventario y respaldo JSON funcionan', async () => {
   cookie = login.response.headers.getSetCookie()[0].split(';')[0];
   const { data: clientsAfterRestore } = await request('/clients?search=Temporal');
   assert.equal(clientsAfterRestore.total, 0);
+
+  const { data: ordersAfterRestore } = await request('/orders?search=SN-TEST-001');
+  const restoredOrder = ordersAfterRestore.orders[0];
+  assert.ok(restoredOrder);
+  const { data: restoredDetail } = await request(`/orders/${restoredOrder.id}`);
+  assert.equal(restoredDetail.photos.length, 1);
+  const restoredPhoto = await request(`/orders/${restoredOrder.id}/photos/${restoredDetail.photos[0].id}`, { raw: true });
+  assert.equal(restoredPhoto.status, 200);
+  assert.ok(Buffer.from(await restoredPhoto.arrayBuffer()).length > 20);
 });

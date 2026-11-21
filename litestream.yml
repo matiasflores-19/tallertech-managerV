@@ -1,0 +1,4 @@
+dbs:
+  - path: ${DATA_DIR}/tallertech.db
+    replicas:
+      - url: ${LITESTREAM_REPLICA_URL}

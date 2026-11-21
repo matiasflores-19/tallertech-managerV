@@ -113,9 +113,13 @@ export function start() {
   if (seed.seeded) {
     console.log(`Datos demo cargados: ${seed.orders} órdenes y ${seed.clients} clientes.`);
   }
-  createAutomaticBackup();
-  backupTimer = setInterval(createAutomaticBackup, 24 * 60 * 60 * 1000);
-  backupTimer.unref?.();
+  // En Render Free + Litestream el respaldo durable lo maneja Supabase Storage.
+  // Los snapshots locales solo tienen sentido en un servidor con disco persistente.
+  if (!process.env.LITESTREAM_REPLICA_URL) {
+    createAutomaticBackup();
+    backupTimer = setInterval(createAutomaticBackup, 24 * 60 * 60 * 1000);
+    backupTimer.unref?.();
+  }
 
   server = app.listen(config.port, '0.0.0.0', () => {
     console.log(`\nTallerTech Manager API escuchando en http://localhost:${config.port}`);

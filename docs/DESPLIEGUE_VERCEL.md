@@ -23,11 +23,29 @@ Vercel
 
 Esto conserva **todas las funciones actuales**, incluida la recepción rápida, la cámara, los PDF y los Excel. La única concesión es que el backend no vive dentro de Vercel.
 
+> **¿Necesitás costo USD 0?** Render Free no tiene disco persistente. Usá la variante con Litestream + Supabase Storage documentada en [DESPLIEGUE_CERO.md](DESPLIEGUE_CERO.md). La API sigue en Render Free, pero la base SQLite se replica a Supabase y se restaura al arrancar.
+
 El archivo `vercel.json` ya incluye el rewrite. Solo hay que reemplazar la URL de ejemplo por la URL real de la API.
 
 ---
 
 ## 1. Desplegar primero la API
+
+La API necesita persistencia. Hay dos alternativas:
+
+- **Costo cero:** Render Free + Litestream + Supabase Storage. Ver [DESPLIEGUE_CERO.md](DESPLIEGUE_CERO.md). Es la ruta recomendada si no querés pagar nada.
+- **Con disco persistente:** Render/Railway con volumen pago (se explica abajo).
+
+### Opción gratis con Render Free
+
+Seguí [DESPLIEGUE_CERO.md](DESPLIEGUE_CERO.md). En resumen:
+
+1. Crear bucket privado en Supabase Storage.
+2. Configurar Litestream en Render.
+3. Render Free no necesita disco.
+4. Vercel apunta a la URL de Render.
+
+### Opción con disco persistente
 
 La API necesita un disco persistente. Opciones:
 

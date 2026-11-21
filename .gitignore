@@ -9,3 +9,5 @@ artifacts/
 .test-data/
 coverage/
 *.log
+bin/
+.tools/
