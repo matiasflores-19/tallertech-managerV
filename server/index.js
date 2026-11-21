@@ -56,7 +56,7 @@ app.use((req, res, next) => {
 });
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, app: 'TallerTech Manager', version: '1.0.0', time: new Date().toISOString() });
+  res.json({ ok: true, app: 'TallerTech Manager', version: '1.1.0', time: new Date().toISOString() });
 });
 
 app.use('/api/auth', authRoutes);

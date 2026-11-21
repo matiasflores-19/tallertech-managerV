@@ -17,7 +17,7 @@ services:
       - key: COOKIE_SECURE
         value: "true"
       - key: SEED_DEMO
-        value: "true"
+        value: "false"
       - key: ADMIN_USER
         value: admin
       - key: ADMIN_PASSWORD

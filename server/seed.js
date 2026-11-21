@@ -459,6 +459,10 @@ function seedDemo() {
 
 export function seedDemoData() {
   ensureBaseData();
+  const alreadySeeded = get("SELECT value FROM settings WHERE key = 'demo_seed_done'");
+  if (alreadySeeded?.value === 'true') {
+    return { seeded: false, reason: 'La base ya fue inicializada; no se recargan datos demo.' };
+  }
   if (!config.demoSeed) {
     return { seeded: false, reason: 'SEED_DEMO=false' };
   }

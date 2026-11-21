@@ -52,7 +52,7 @@ router.get('/', (req, res) => {
     settings: getSettings(),
     system: {
       appName: 'TallerTech Manager',
-      version: '1.0.0',
+      version: '1.1.0',
       node: process.version,
       database: 'SQLite',
       databaseSize,
