@@ -1,0 +1,13 @@
+node_modules/
+data/
+artifacts/
+tests/
+docs/
+scripts/
+server/
+functions/
+dist/
+.env
+.env.*
+!.env.example
+README.md

@@ -1,0 +1,46 @@
+{
+  "name": "tallertech-manager",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sistema web de gestión integral para talleres de reparación informática y electrónica.",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB -c blue,green \"node --watch server/index.js\" \"vite --host 0.0.0.0\"",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "seed": "node server/seed.js",
+    "db:reset": "node scripts/reset-demo.mjs",
+    "vercel:api": "node scripts/set-vercel-api.mjs",
+    "test": "node --test --test-concurrency=1 tests/*.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.3",
+    "exceljs": "^4.4.0",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "pdfkit": "^0.17.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
+    "lucide-react": "^0.468.0",
+    "playwright-core": "^1.65.1",
+    "postcss": "^8.5.6",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.4",
+    "recharts": "^2.15.4",
+    "tailwindcss": "^3.4.17",
+    "vite": "^7.1.9"
+  }
+}

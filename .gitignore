@@ -1,0 +1,11 @@
+node_modules/
+dist/
+data/
+.env
+.env.local
+npm-debug.log*
+artifacts/
+.build-tmp/
+.test-data/
+coverage/
+*.log
