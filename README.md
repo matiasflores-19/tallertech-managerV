@@ -1,6 +1,8 @@
 # TallerTech Manager
 
-Sistema web de gestión integral para talleres de reparación informática y electrónica. Está desarrollado en español, con autenticación, base de datos persistente, seguimiento de reparaciones, inventario, finanzas, clientes, reportes PDF/Excel y respaldos.
+Sistema web de gestión integral para talleres de reparación informática y electrónica. Está desarrollado en español, con autenticación, base de datos persistente, seguimiento de reparaciones, inventario, finanzas, clientes, reportes PDF/Excel, PWA y respaldos.
+
+**Repositorio:** https://github.com/matiasflores-19/tallertech-managerV
 
 > **Entrega funcional, no una maqueta.** El backend guarda los datos en SQLite, aplica validaciones y reglas de negocio, y expone una API consumida por la interfaz React.
 
