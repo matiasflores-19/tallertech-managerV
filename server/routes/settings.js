@@ -52,7 +52,7 @@ router.get('/', (req, res) => {
     settings: getSettings(),
     system: {
       appName: 'TallerTech Manager',
-      version: '1.1.0',
+      version: '1.2.0',
       node: process.version,
       database: 'SQLite',
       databaseSize,
@@ -76,7 +76,7 @@ router.patch(
     if (!Object.keys(values).length) throw new HttpError(400, 'No hay cambios para guardar.');
     setSettings(values);
     audit(req, 'SETTINGS_UPDATE', 'settings', null, 'Se actualizaron los datos del taller.');
-    res.json({ ok: true, message: 'Configuración guardada.', settings: getSettings() });
+    res.json({ ok: true, message: 'ConfiguraciÃ³n guardada.', settings: getSettings() });
   }),
 );
 
@@ -89,7 +89,7 @@ router.get(
     const stamp = new Date().toISOString().slice(0, 10);
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="tallertech-respaldo-${stamp}.json"`);
-    audit(req, 'BACKUP_EXPORT', 'backup', null, `Se descargó un respaldo JSON (imágenes: ${includeImages ? 'sí' : 'no'}).`);
+    audit(req, 'BACKUP_EXPORT', 'backup', null, `Se descargÃ³ un respaldo JSON (imÃ¡genes: ${includeImages ? 'sÃ­' : 'no'}).`);
     res.send(JSON.stringify(backup, null, 2));
   }),
 );
@@ -100,7 +100,7 @@ router.post(
   asyncHandler((req, res) => {
     const file = createAutomaticBackup();
     if (!file) throw new HttpError(500, 'No se pudo crear el respaldo de la base de datos.');
-    audit(req, 'BACKUP_CREATE', 'backup', null, 'Se creó un respaldo manual de la base de datos.');
+    audit(req, 'BACKUP_CREATE', 'backup', null, 'Se creÃ³ un respaldo manual de la base de datos.');
     res.status(201).json({ ok: true, message: 'Respaldo de base de datos creado.', backups: listBackups() });
   }),
 );
@@ -128,16 +128,16 @@ router.post(
   requireRole('admin'),
   asyncHandler((req, res) => {
     const schema = z.object({
-      password: z.string().min(1, 'Ingresá tu contraseña para confirmar.'),
+      password: z.string().min(1, 'IngresÃ¡ tu contraseÃ±a para confirmar.'),
       confirmation: z.string().refine((value) => value === 'RESTAURAR', {
-        message: 'Escribí RESTAURAR para confirmar.',
+        message: 'EscribÃ­ RESTAURAR para confirmar.',
       }),
       backup: z.object({}).passthrough(),
     });
     const data = parse(schema, req.body);
     const user = get('SELECT * FROM users WHERE id = ?', [req.user.id]);
     if (!user || !bcrypt.compareSync(data.password, user.password_hash)) {
-      throw new HttpError(403, 'La contraseña no es correcta.');
+      throw new HttpError(403, 'La contraseÃ±a no es correcta.');
     }
     let result;
     try {
@@ -148,7 +148,7 @@ router.post(
     destroySession(res);
     res.json({
       ok: true,
-      message: 'Respaldo restaurado correctamente. Por seguridad, iniciá sesión nuevamente.',
+      message: 'Respaldo restaurado correctamente. Por seguridad, iniciÃ¡ sesiÃ³n nuevamente.',
       result,
     });
   }),

@@ -56,7 +56,7 @@ app.use((req, res, next) => {
 });
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, app: 'TallerTech Manager', version: '1.1.0', time: new Date().toISOString() });
+  res.json({ ok: true, app: 'TallerTech Manager', version: '1.2.0', time: new Date().toISOString() });
 });
 
 app.use('/api/auth', authRoutes);
@@ -91,13 +91,13 @@ app.use((error, req, res, next) => {
   if (res.headersSent) return next(error);
   const status = error.status || error.statusCode || 500;
   if (status >= 500) console.error(error);
-  let message = error.message || 'Ocurrió un error inesperado.';
+  let message = error.message || 'OcurriÃ³ un error inesperado.';
   if (error.type === 'entity.too.large') message = 'El archivo es demasiado grande.';
-  if (message.includes('UNIQUE constraint failed')) message = 'Ya existe un registro con un dato único repetido.';
+  if (message.includes('UNIQUE constraint failed')) message = 'Ya existe un registro con un dato Ãºnico repetido.';
   if (message.includes('FOREIGN KEY constraint failed')) {
-    message = 'No se puede completar la operación porque el registro está relacionado con otros datos.';
+    message = 'No se puede completar la operaciÃ³n porque el registro estÃ¡ relacionado con otros datos.';
   }
-  if (message.includes('CHECK constraint failed')) message = 'Alguno de los datos no cumple las reglas de validación.';
+  if (message.includes('CHECK constraint failed')) message = 'Alguno de los datos no cumple las reglas de validaciÃ³n.';
   const payload = { error: message };
   if (error.details) payload.details = error.details;
   if (config.env === 'development' && status >= 500) payload.stack = error.stack;
@@ -111,7 +111,7 @@ export function start() {
   ensureBaseData();
   const seed = seedDemoData();
   if (seed.seeded) {
-    console.log(`Datos demo cargados: ${seed.orders} órdenes y ${seed.clients} clientes.`);
+    console.log(`Datos demo cargados: ${seed.orders} Ã³rdenes y ${seed.clients} clientes.`);
   }
   // En Render Free + Litestream el respaldo durable lo maneja Supabase Storage.
   // Los snapshots locales solo tienen sentido en un servidor con disco persistente.
@@ -123,7 +123,7 @@ export function start() {
 
   server = app.listen(config.port, '0.0.0.0', () => {
     console.log(`\nTallerTech Manager API escuchando en http://localhost:${config.port}`);
-    console.log(`Entorno: ${config.env} · Base de datos: ${config.dbPath}`);
+    console.log(`Entorno: ${config.env} Â· Base de datos: ${config.dbPath}`);
     if (config.env === 'development') console.log('Frontend de desarrollo: http://localhost:5173\n');
   });
   return server;

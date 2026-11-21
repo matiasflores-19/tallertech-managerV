@@ -253,3 +253,57 @@ test('finanzas, inventario y respaldo JSON funcionan', async () => {
   assert.equal(restoredPhoto.status, 200);
   assert.ok(Buffer.from(await restoredPhoto.arrayBuffer()).length > 20);
 });
+
+test('elimina órdenes en lote, anula pagos y restituye inventario', async () => {
+  const stamp = Date.now();
+  const { data: clientData } = await request('/clients', {
+    method: 'POST',
+    body: { first_name: 'Borrar', last_name: `Lote ${stamp}`, phone: `11 55${String(stamp).slice(-6)}` },
+  });
+  const equipmentTypeId = (await request('/meta')).data.equipmentTypes[0].id;
+  const { data: inventoryBefore } = await request('/inventory/products');
+  const product = inventoryBefore.products.find((item) => item.stock > 2);
+  assert.ok(product);
+  const stockBefore = product.stock;
+
+  const { data: orderData } = await request('/orders', {
+    method: 'POST',
+    body: {
+      client_id: clientData.client.id,
+      equipment_type_id: equipmentTypeId,
+      brand: 'Marca Borrar',
+      model: 'Modelo Borrar',
+      serial_number: `SN-DELETE-${stamp}`,
+      declared_issue: 'Prueba de eliminación',
+      priority: 'NORMAL',
+      estimated_budget: 50000,
+      deposit_amount: 10000,
+      payment_method: 'EFECTIVO',
+      photos: [],
+    },
+  });
+  const orderId = orderData.order.id;
+
+  const { response: partResponse } = await request(`/orders/${orderId}/parts`, {
+    method: 'POST',
+    body: { product_id: product.id, quantity: 1, unit_price: 5000 },
+  });
+  assert.equal(partResponse.status, 201);
+
+  const { response: bulkResponse, data: bulkData } = await request('/orders/bulk-delete', {
+    method: 'POST',
+    body: { order_ids: [orderId] },
+  });
+  assert.equal(bulkResponse.status, 200);
+  assert.equal(bulkData.deleted.length, 1);
+
+  const { response: missingResponse } = await request(`/orders/${orderId}`);
+  assert.equal(missingResponse.status, 404);
+
+  const { data: inventoryAfter } = await request('/inventory/products');
+  const productAfter = inventoryAfter.products.find((item) => item.id === product.id);
+  assert.equal(productAfter.stock, stockBefore);
+
+  const { data: movements } = await request(`/inventory/movements?product_id=${product.id}`);
+  assert.ok(movements.movements.some((movement) => movement.reference_type === 'ORDER_DELETE'));
+});

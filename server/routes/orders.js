@@ -115,6 +115,60 @@ const partsTotalSql = `COALESCE((SELECT SUM(op.quantity * op.unit_price) FROM or
 const partsCountSql = `COALESCE((SELECT SUM(op.quantity) FROM order_parts op WHERE op.order_id = o.id AND op.removed_at IS NULL), 0)`;
 const paidSql = `COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.order_id = o.id AND p.deleted_at IS NULL), 0)`;
 
+function deleteOrdersPermanently(ids, userId) {
+  return transaction(() => {
+    const deleted = [];
+    for (const id of ids) {
+      const order = get('SELECT * FROM orders WHERE id = ?', [id]);
+      if (!order) continue;
+
+      // Restituir al inventario los repuestos que seguían descontados.
+      const parts = all(
+        `SELECT op.*, p.stock AS product_stock
+         FROM order_parts op JOIN products p ON p.id = op.product_id
+         WHERE op.order_id = ? AND op.removed_at IS NULL`,
+        [id],
+      );
+      for (const part of parts) {
+        const stockAfter = Number(part.product_stock) + Number(part.quantity);
+        run('UPDATE products SET stock = ?, updated_at = ? WHERE id = ?', [stockAfter, nowIso(), part.product_id]);
+        insert(
+          `INSERT INTO inventory_movements
+            (product_id, movement_type, quantity, stock_after, unit_cost, reason, reference_type, reference_id, notes, created_by, created_at)
+           VALUES (?, 'ENTRADA', ?, ?, ?, ?, 'ORDER_DELETE', ?, ?, ?, ?)`,
+          [
+            part.product_id,
+            part.quantity,
+            stockAfter,
+            part.unit_cost,
+            `Restitución por eliminación de la orden ${order.order_number}`,
+            id,
+            'Stock restituido al eliminar la orden.',
+            userId,
+            nowIso(),
+          ],
+        );
+      }
+
+      // Los pagos y sus ingresos financieros quedan anulados; se conserva
+      // la trazabilidad en el log de auditoría.
+      run(
+        `UPDATE transactions SET deleted_at = ?
+         WHERE deleted_at IS NULL
+           AND (order_id = ? OR payment_id IN (SELECT id FROM payments WHERE order_id = ?))`,
+        [nowIso(), id, id],
+      );
+      run('DELETE FROM payments WHERE order_id = ?', [id]);
+
+      // Las tablas hijas (historial, intervenciones, repuestos y fotos) se
+      // eliminan en cascada.
+      run('DELETE FROM orders WHERE id = ?', [id]);
+      deleted.push(order);
+    }
+    return deleted;
+  });
+}
+
 function decorateOrder(row) {
   if (!row) return null;
   const billable = Number(row.final_price) > 0 ? Number(row.final_price) : Number(row.estimated_budget || 0);
@@ -837,20 +891,42 @@ router.get(
   }),
 );
 
+router.post(
+  '/bulk-delete',
+  requireRole('admin'),
+  asyncHandler((req, res) => {
+    const schema = z.object({
+      order_ids: z.array(z.coerce.number().int().positive()).min(1).max(100),
+    });
+    const data = parse(schema, req.body);
+    const ids = [...new Set(data.order_ids)];
+    const deleted = deleteOrdersPermanently(ids, req.user.id);
+    if (!deleted.length) throw new HttpError(404, 'No se encontraron órdenes para eliminar.');
+    audit(
+      req,
+      'ORDER_BULK_DELETE',
+      'order',
+      null,
+      `Se eliminaron ${deleted.length} órdenes: ${deleted.map((order) => order.order_number).join(', ')}.`,
+    );
+    res.json({
+      ok: true,
+      message: `${deleted.length} ${deleted.length === 1 ? 'orden eliminada' : 'órdenes eliminadas'} correctamente.`,
+      deleted: deleted.map((order) => ({ id: order.id, order_number: order.order_number })),
+    });
+  }),
+);
+
 router.delete(
   '/:id',
   requireRole('admin'),
   asyncHandler((req, res) => {
     const id = Number(req.params.id);
-    const order = get('SELECT * FROM orders WHERE id = ?', [id]);
-    if (!order) throw new HttpError(404, 'Orden no encontrada.');
-    const payments = get('SELECT COUNT(*) AS count FROM payments WHERE order_id = ? AND deleted_at IS NULL', [id]).count;
-    if (payments > 0) {
-      throw new HttpError(409, 'No se puede eliminar una orden con pagos registrados. Cambiá su estado a cancelada.');
-    }
-    run('DELETE FROM orders WHERE id = ?', [id]);
+    const deleted = deleteOrdersPermanently([id], req.user.id);
+    if (!deleted.length) throw new HttpError(404, 'Orden no encontrada.');
+    const order = deleted[0];
     audit(req, 'ORDER_DELETE', 'order', id, `Se eliminó la orden ${order.order_number}.`);
-    res.json({ ok: true, message: 'Orden eliminada.' });
+    res.json({ ok: true, message: `Orden ${order.order_number} eliminada.` });
   }),
 );
 

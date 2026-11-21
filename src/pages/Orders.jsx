@@ -8,11 +8,15 @@ import {
   Plus,
   RotateCcw,
   SlidersHorizontal,
+  Trash2,
   Users,
   Wrench,
   X,
 } from 'lucide-react';
 import { useApiQuery, useDocumentTitle } from '../hooks/useApi.js';
+import { useAuth } from '../context/AuthProvider.jsx';
+import { useUI } from '../context/UIProvider.jsx';
+import { api } from '../lib/api.js';
 import { formatDate, formatMoney } from '../lib/format.js';
 import { ACTIVE_STATUSES, ORDER_STATUSES, STATUS_META, PRIORITIES } from '../lib/constants.js';
 import {
@@ -35,9 +39,13 @@ const SORT_OPTIONS = [
 
 export default function Orders() {
   useDocumentTitle('Órdenes de reparación');
+  const { isAdmin } = useAuth();
+  const { toast, confirm } = useUI();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [showFilters, setShowFilters] = useState(false);
+  const [selected, setSelected] = useState([]);
+  const [deleting, setDeleting] = useState(false);
   const { data: meta } = useApiQuery('/meta');
 
   const filters = useMemo(
@@ -95,6 +103,42 @@ export default function Orders() {
 
   const { data, loading, refetch } = useApiQuery(`/orders?${queryString}`);
   const orders = data?.orders || [];
+  const allSelected = orders.length > 0 && orders.every((order) => selected.includes(order.id));
+  const someSelected = selected.length > 0;
+
+  useEffect(() => {
+    setSelected([]);
+  }, [queryString]);
+
+  const toggleSelected = (id) => {
+    setSelected((current) => (current.includes(id) ? current.filter((value) => value !== id) : [...current, id]));
+  };
+
+  const toggleAll = () => {
+    setSelected(allSelected ? [] : orders.map((order) => order.id));
+  };
+
+  const deleteSelected = async () => {
+    if (!selected.length) return;
+    const accepted = await confirm({
+      title: 'Eliminar órdenes',
+      message: `Se eliminarán ${selected.length} ${selected.length === 1 ? 'orden' : 'órdenes'} de forma definitiva. Si tienen pagos, esos ingresos se anularán y los repuestos volverán al inventario. Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar definitivamente',
+      tone: 'danger',
+    });
+    if (!accepted) return;
+    setDeleting(true);
+    try {
+      const response = await api.post('/orders/bulk-delete', { order_ids: selected });
+      toast.success(response.message);
+      setSelected([]);
+      refetch();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const activeFilterCount = [
     filters.search,
@@ -311,6 +355,40 @@ export default function Orders() {
           </div>
         </div>
 
+        {isAdmin && orders.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] bg-tech-500/[0.035] px-4 py-2.5">
+            <label className="inline-flex cursor-pointer items-center gap-2 text-[11px] font-medium text-slate-400">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                className="h-4 w-4 cursor-pointer rounded border-white/20 bg-slate-900 accent-tech-500"
+              />
+              Seleccionar página
+            </label>
+            <div className="flex items-center gap-2">
+              {someSelected ? (
+                <>
+                  <span className="text-[11px] font-medium text-slate-400">{selected.length} seleccionadas</span>
+                  <button
+                    type="button"
+                    className="btn-ghost btn-sm text-rose-300 hover:bg-rose-500/10 hover:text-rose-200"
+                    onClick={deleteSelected}
+                    disabled={deleting}
+                  >
+                    <Trash2 size={13} /> {deleting ? 'Eliminando…' : 'Eliminar seleccionadas'}
+                  </button>
+                  <button type="button" className="btn-ghost btn-sm" onClick={() => setSelected([])} disabled={deleting}>
+                    <X size={13} /> Limpiar
+                  </button>
+                </>
+              ) : (
+                <span className="text-[11px] text-slate-600">Marcá órdenes para eliminarlas en lote.</span>
+              )}
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <TableSkeleton rows={7} />
         ) : orders.length === 0 ? (
@@ -331,6 +409,17 @@ export default function Orders() {
               <table className="data-table min-w-[900px]">
                 <thead>
                   <tr>
+                    {isAdmin && (
+                      <th className="w-10">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={toggleAll}
+                          aria-label="Seleccionar todas las órdenes de la página"
+                          className="h-4 w-4 cursor-pointer rounded border-white/20 bg-slate-900 accent-tech-500"
+                        />
+                      </th>
+                    )}
                     <th>Orden</th>
                     <th>Cliente</th>
                     <th>Equipo</th>
@@ -344,6 +433,17 @@ export default function Orders() {
                 <tbody>
                   {orders.map((order) => (
                     <tr key={order.id} className="group">
+                      {isAdmin && (
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(order.id)}
+                            onChange={() => toggleSelected(order.id)}
+                            aria-label={`Seleccionar ${order.order_number}`}
+                            className="h-4 w-4 cursor-pointer rounded border-white/20 bg-slate-900 accent-tech-500"
+                          />
+                        </td>
+                      )}
                       <td>
                         <Link to={`/ordenes/${order.id}`} className="font-mono text-xs font-semibold text-tech-400 transition hover:text-tech-300">
                           {order.order_number}
@@ -375,26 +475,37 @@ export default function Orders() {
 
             <div className="divide-y divide-white/[0.05] md:hidden">
               {orders.map((order) => (
-                <Link key={order.id} to={`/ordenes/${order.id}`} className="block px-4 py-3.5 transition active:bg-white/[0.03]">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[11px] font-semibold text-tech-400">{order.order_number}</span>
-                        <PriorityBadge priority={order.priority} />
+                <div key={order.id} className="flex items-start gap-2 px-3 py-3.5 transition active:bg-white/[0.03]">
+                  {isAdmin && (
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(order.id)}
+                      onChange={() => toggleSelected(order.id)}
+                      aria-label={`Seleccionar ${order.order_number}`}
+                      className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded border-white/20 bg-slate-900 accent-tech-500"
+                    />
+                  )}
+                  <Link to={`/ordenes/${order.id}`} className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[11px] font-semibold text-tech-400">{order.order_number}</span>
+                          <PriorityBadge priority={order.priority} />
+                        </div>
+                        <p className="mt-1.5 truncate text-sm font-semibold text-slate-100">{order.client_name}</p>
+                        <p className="mt-0.5 truncate text-xs text-slate-500">{order.brand} {order.model} · {order.equipment_type_name}</p>
                       </div>
-                      <p className="mt-1.5 truncate text-sm font-semibold text-slate-100">{order.client_name}</p>
-                      <p className="mt-0.5 truncate text-xs text-slate-500">{order.brand} {order.model} · {order.equipment_type_name}</p>
+                      <StatusBadge status={order.status} className="shrink-0" />
                     </div>
-                    <StatusBadge status={order.status} className="shrink-0" />
-                  </div>
-                  <div className="mt-3 flex items-end justify-between gap-3">
-                    <p className="text-[10px] text-slate-600">Ingreso {formatDate(order.intake_at)} · {order.technician_name || 'Sin técnico'}</p>
-                    <div className="text-right">
-                      <p className={`text-xs font-semibold ${order.balance > 0 ? 'text-amber-300' : 'text-emerald-400'}`}>{formatMoney(order.balance)}</p>
-                      <p className="text-[9px] uppercase tracking-wider text-slate-600">saldo</p>
+                    <div className="mt-3 flex items-end justify-between gap-3">
+                      <p className="text-[10px] text-slate-600">Ingreso {formatDate(order.intake_at)} · {order.technician_name || 'Sin técnico'}</p>
+                      <div className="text-right">
+                        <p className={`text-xs font-semibold ${order.balance > 0 ? 'text-amber-300' : 'text-emerald-400'}`}>{formatMoney(order.balance)}</p>
+                        <p className="text-[9px] uppercase tracking-wider text-slate-600">saldo</p>
+                      </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                </div>
               ))}
             </div>
 

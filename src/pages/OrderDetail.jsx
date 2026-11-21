@@ -641,6 +641,7 @@ export default function OrderDetail() {
   const [tab, setTab] = useState('summary');
   const [modal, setModal] = useState(null);
   const [downloading, setDownloading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [createdBanner, setCreatedBanner] = useState(Boolean(location.state?.created));
 
   useDocumentTitle(data ? `${data.order.order_number}` : 'Orden');
@@ -705,6 +706,25 @@ export default function OrderDetail() {
     }
   };
 
+  const deleteOrder = async () => {
+    const accepted = await confirm({
+      title: `Eliminar ${order.order_number}`,
+      message: 'Se eliminará la orden de forma definitiva. Si tiene pagos, esos ingresos se anularán y los repuestos volverán al inventario. Esta acción no se puede deshacer.',
+      confirmLabel: 'Eliminar definitivamente',
+      tone: 'danger',
+    });
+    if (!accepted) return;
+    setDeleting(true);
+    try {
+      const response = await api.delete(`/orders/${order.id}`);
+      toast.success(response.message);
+      navigate('/ordenes', { replace: true });
+    } catch (requestError) {
+      toast.error(requestError.message);
+      setDeleting(false);
+    }
+  };
+
   const tabs = TABS.map((item) => ({
     ...item,
     count:
@@ -739,6 +759,18 @@ export default function OrderDetail() {
             <button type="button" className="btn-secondary" onClick={downloadReceipt} disabled={downloading}>
               <Printer size={16} /> <span className="hidden sm:inline">{downloading ? 'Generando…' : 'Comprobante PDF'}</span>
             </button>
+            {isAdmin && (
+              <button
+                type="button"
+                className="btn-ghost text-rose-300 hover:bg-rose-500/10 hover:text-rose-200"
+                onClick={deleteOrder}
+                disabled={deleting}
+                title="Eliminar esta orden"
+              >
+                <Trash2 size={16} />
+                <span className="hidden sm:inline">{deleting ? 'Eliminando…' : 'Eliminar'}</span>
+              </button>
+            )}
             <button type="button" className="btn-primary" onClick={() => setModal('status')} disabled={isClosed && order.status === 'CANCELADO'}>
               <ArrowRightLeft size={16} /> Cambiar estado
             </button>
