@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { classNames } from '../lib/format.js';
 
@@ -36,7 +37,7 @@ export default function Modal({
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[70] flex items-end justify-center bg-black/75 backdrop-blur-sm sm:items-center sm:p-4"
       onMouseDown={(event) => {
@@ -65,6 +66,7 @@ export default function Modal({
         <div className="modal-scroll flex-1 overflow-y-auto px-5 py-4">{children}</div>
         {footer && <div className="bottom-safe border-t border-white/[0.07] bg-ink-900/50 px-5 py-3.5">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

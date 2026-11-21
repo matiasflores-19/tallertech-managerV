@@ -49,7 +49,7 @@ export default {
         },
       },
       animation: {
-        'fade-in': 'fade-in 0.3s ease-out both',
+        'fade-in': 'fade-in 0.3s ease-out backwards',
         'slide-up': 'slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both',
         shimmer: 'shimmer 1.6s linear infinite',
       },
