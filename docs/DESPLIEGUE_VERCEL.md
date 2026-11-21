@@ -60,7 +60,7 @@ La API necesita un disco persistente. Opciones:
 1. Subir el proyecto a GitHub.
 2. **New → Web Service**.
 3. Configurar:
-   - Root Directory: `tallertech-manager`
+   - Root Directory: vacía / `.` (el repo ya tiene la app en la raíz)
    - Runtime: Node
    - Build Command: `npm ci`
    - Start Command: `node server/index.js`
@@ -129,7 +129,7 @@ El resultado debe quedar así:
 2. Entrar a https://vercel.com → **Add New → Project**.
 3. Importar el repositorio de GitHub.
 4. Configurar:
-   - **Root Directory:** `tallertech-manager`
+   - **Root Directory:** vacía / `.` (el repo ya tiene la app en la raíz)
    - **Framework Preset:** Vite
    - **Build Command:** `npm run build`
    - **Output Directory:** `dist`

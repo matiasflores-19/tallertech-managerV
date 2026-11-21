@@ -50,7 +50,7 @@ Supabase Free incluye 1 GB de Storage y 500 MB de base. Al guardar las fotos en 
 1. Subir el proyecto a GitHub.
 2. En Render: **New → Blueprint** (usar `render.yaml`) o **New → Web Service**.
 3. Si es manual:
-   - Root Directory: `tallertech-manager`
+   - Root Directory: vacía / `.` (el repo ya tiene la app en la raíz)
    - Runtime: Node
    - Plan: **Free**
    - **Build Command:**
@@ -113,7 +113,7 @@ npm run vercel:api -- https://tu-api.onrender.com
 
 3. En Vercel: **Add New → Project**.
 4. Configurar:
-   - Root Directory: `tallertech-manager`
+   - Root Directory: vacía / `.` (el repo ya tiene la app en la raíz)
    - Framework Preset: Vite
    - Build Command: `npm run build`
    - Output Directory: `dist`
